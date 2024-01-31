@@ -29,7 +29,7 @@ func folderOperatorInstance() *FolderOperator {
 	return &single
 }
 
-// CreateDirectory mkdir
+// CreateDirectory 递归创建目录
 func (fo *FolderOperator) CreateDirectory(dirname string) error {
 	var absPath = dirname
 	if isAbs := filepath.IsAbs(absPath); !isAbs {
@@ -242,24 +242,30 @@ func (fo *FolderOperator) CopyDirectory(src, dst string) error {
 	if err != nil {
 		return err
 	}
+	if len(contents) == 0 {
+		err := fo.CreateDirectory(dst)
+		if err != nil {
+			return err
+		}
+	} else {
+		for _, content := range contents {
+			srcPath := filepath.Join(src, content.Name)
+			dstPath := filepath.Join(dst, content.Name)
+			if content.IsDir {
+				err := fo.CopyDirectory(srcPath, dstPath)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := fo.CreateDirectory(filepath.Dir(dstPath))
+				if err != nil {
+					return err
+				}
 
-	for _, content := range contents {
-		srcPath := filepath.Join(src, content.Name)
-		dstPath := filepath.Join(dst, content.Name)
-		if content.IsDir {
-			err := fo.CopyDirectory(srcPath, dstPath)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := fo.CreateDirectory(filepath.Dir(dstPath))
-			if err != nil {
-				return err
-			}
-
-			err = File.CopyFile(srcPath, dstPath)
-			if err != nil {
-				return err
+				err = File.CopyFile(srcPath, dstPath)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
