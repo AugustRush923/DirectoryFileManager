@@ -11,7 +11,7 @@ import (
 
 var Folder = folderOperatorInstance()
 
-type FolderOperator struct {
+type folderOperator struct {
 }
 
 type DirectoryContent struct {
@@ -21,31 +21,23 @@ type DirectoryContent struct {
 	ModeTime string
 	Size     int64
 	Path     string
-	children []*DirectoryContent
+	Children []*DirectoryContent
 }
 
-func folderOperatorInstance() *FolderOperator {
-	single := FolderOperator{}
+func folderOperatorInstance() *folderOperator {
+	single := folderOperator{}
 	return &single
 }
 
-// CreateDirectory 递归创建目录
-func (fo *FolderOperator) CreateDirectory(dirname string) error {
-	var absPath = dirname
-	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), dirname)
-	}
-
-	err := os.MkdirAll(absPath, os.ModePerm)
+// CreateDirectory :在指定位置创建目录 类似于Linux中的mkdir -p命令
+func (fo *folderOperator) CreateDirectory(dirname string) error {
+	err := os.MkdirAll(Common.CompleteFullPath(dirname), os.ModePerm)
 	return err
 }
 
-// DeleteDirectory rm -rf
-func (fo *FolderOperator) DeleteDirectory(dirname string) error {
-	var absPath = dirname
-	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), dirname)
-	}
+// DeleteDirectory :删除指定目录及目录下的所有内容 类似于Linux中的rm -rf命令
+func (fo *folderOperator) DeleteDirectory(dirname string) error {
+	absPath := Common.CompleteFullPath(dirname)
 
 	if isDir := Common.IsDir(absPath); !isDir {
 		return fmt.Errorf("%s is not a directory", absPath)
@@ -56,9 +48,8 @@ func (fo *FolderOperator) DeleteDirectory(dirname string) error {
 }
 
 // Tree :获取目标文件夹下及子文件夹下的所有内容 类似于Linux中的tree命令
-func (fo *FolderOperator) Tree(dirname string) (string, error) {
-	dirname = Common.CompletePath(dirname)
-	fmt.Println("dirname", dirname)
+func (fo *folderOperator) Tree(dirname string) (string, error) {
+	dirname = Common.CompleteFullPath(dirname)
 	return circulateDirectory(dirname, 0)
 }
 
@@ -78,7 +69,7 @@ func circulateDirectory(path string, depth int) (string, error) {
 	for _, entry := range dirEntry {
 		depth++
 		if entry.IsDir() {
-			dir, _ := circulateDirectory(SplicingPath(path, entry.Name(), string(os.PathSeparator)), depth)
+			dir, _ := circulateDirectory(filepath.Join(path, entry.Name()), depth)
 			s = SplicingPath(s, strings.Repeat("----", depth-1), entry.Name(), "\n", dir)
 		} else {
 			s = SplicingPath(s, strings.Repeat("----", depth-1), entry.Name(), "\n")
@@ -89,15 +80,11 @@ func circulateDirectory(path string, depth int) (string, error) {
 	return s, nil
 }
 
-// ListDirectoryContents :获取目标文件夹下的所有内容
-func (fo *FolderOperator) ListDirectoryContents(dirname string) ([]*DirectoryContent, error) {
-	var absPath = dirname
-	//contentList := make([]consts.StrDict, 0, 10)
+// ListDirectoryContents :获取目标文件夹下的所有内容 类似于Linux中的ls命令
+func (fo *folderOperator) ListDirectoryContents(dirname string) ([]*DirectoryContent, error) {
 	contents := make([]*DirectoryContent, 0)
 
-	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), dirname)
-	}
+	absPath := Common.CompleteFullPath(dirname)
 
 	fileInfo, err := os.Stat(absPath)
 	if err != nil {
@@ -138,8 +125,8 @@ func (fo *FolderOperator) ListDirectoryContents(dirname string) ([]*DirectoryCon
 	return contents, nil
 }
 
-// Ls : ls
-func (fo *FolderOperator) Ls(dirname string) (string, error) {
+// Ls :获取目标文件夹下的所有内容 以字符串形式展示
+func (fo *folderOperator) Ls(dirname string) (string, error) {
 	contents, err := fo.ListDirectoryContents(dirname)
 	if err != nil {
 		return "", err
@@ -153,8 +140,8 @@ func (fo *FolderOperator) Ls(dirname string) (string, error) {
 	return resultStr, nil
 }
 
-// Lsl : ls -l
-func (fo *FolderOperator) Lsl(dirname string) (string, error) {
+// Lsl : 获取目标文件夹下的所有内容的详细信息 以字符串形式展示
+func (fo *folderOperator) Lsl(dirname string) (string, error) {
 	contents, err := fo.ListDirectoryContents(dirname)
 
 	if err != nil {
@@ -170,7 +157,7 @@ func (fo *FolderOperator) Lsl(dirname string) (string, error) {
 }
 
 // GetAllFolderDepthContent :递归获取文件夹下的所有内容
-func (fo *FolderOperator) GetAllFolderDepthContent(dirname string) ([]*DirectoryContent, error) {
+func (fo *folderOperator) GetAllFolderDepthContent(dirname string) ([]*DirectoryContent, error) {
 	absPath := dirname
 	if isAbs := filepath.IsAbs(absPath); !isAbs {
 		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), dirname)
@@ -206,7 +193,7 @@ func (fo *FolderOperator) GetAllFolderDepthContent(dirname string) ([]*Directory
 				ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
 				Size:     fileInfo.Size(),
 				Path:     absPath,
-				children: directoryContents,
+				Children: directoryContents,
 			})
 		} else {
 			contents = append(contents, &DirectoryContent{
@@ -216,7 +203,7 @@ func (fo *FolderOperator) GetAllFolderDepthContent(dirname string) ([]*Directory
 				ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
 				Size:     fileInfo.Size(),
 				Path:     absPath,
-				children: nil,
+				Children: nil,
 			})
 		}
 	}
@@ -224,9 +211,35 @@ func (fo *FolderOperator) GetAllFolderDepthContent(dirname string) ([]*Directory
 	return contents, nil
 }
 
-func (fo *FolderOperator) CopyDirectory(src, dst string) error {
-	// sourcePath      : D:\\awesomeGolang\\src\\base\\consts\\a
-	// destinationPath : C:\\Users\\v_hhdzhang\\Downloads\\consts\\a
+// CopyDirectory :拷贝目录下的所有内容至新路径下 类似于Linux中的cp -r命令
+func (fo *folderOperator) CopyDirectory(srcDirname, dstDirname string) error {
+	srcPath := filepath.Clean(srcDirname)
+	if isAbs := filepath.IsAbs(srcPath); !isAbs {
+		srcPath = filepath.Join(os.Getenv("workDirectory"), srcPath)
+	}
+	srcPathList := strings.Split(srcPath, string(os.PathSeparator))
+	dirname := srcPathList[len(srcPathList)-1]
+
+	dstPath := filepath.Clean(dstDirname)
+	if isAbs := filepath.IsAbs(dstPath); !isAbs {
+		srcPath = filepath.Join(os.Getenv("workDirectory"), dstPath)
+	}
+	dstPath = filepath.Join(dstPath, dirname)
+
+	err := fo.CreateDirectory(dstPath)
+	if err != nil {
+		return fmt.Errorf("create directory %s failed: %v", dstPath, err)
+	}
+
+	err = fo.copyDirectory(srcPath, dstPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (fo *folderOperator) copyDirectory(src, dst string) error {
 	src, dst = filepath.Clean(src), filepath.Clean(dst)
 
 	srcFileInfo, err := os.Stat(src)
@@ -252,7 +265,7 @@ func (fo *FolderOperator) CopyDirectory(src, dst string) error {
 			srcPath := filepath.Join(src, content.Name)
 			dstPath := filepath.Join(dst, content.Name)
 			if content.IsDir {
-				err := fo.CopyDirectory(srcPath, dstPath)
+				err := fo.copyDirectory(srcPath, dstPath)
 				if err != nil {
 					return err
 				}
@@ -269,32 +282,5 @@ func (fo *FolderOperator) CopyDirectory(src, dst string) error {
 			}
 		}
 	}
-	return nil
-}
-
-func (fo *FolderOperator) Cpr(srcDirname, dstDirname string) error {
-	srcPath := filepath.Clean(srcDirname)
-	if isAbs := filepath.IsAbs(srcPath); !isAbs {
-		srcPath = filepath.Join(os.Getenv("workDirectory"), srcPath)
-	}
-	srcPathList := strings.Split(srcPath, string(os.PathSeparator))
-	dirname := srcPathList[len(srcPathList)-1]
-
-	dstPath := filepath.Clean(dstDirname)
-	if isAbs := filepath.IsAbs(dstPath); !isAbs {
-		srcPath = filepath.Join(os.Getenv("workDirectory"), dstPath)
-	}
-	dstPath = filepath.Join(dstPath, dirname)
-
-	err := fo.CreateDirectory(dstPath)
-	if err != nil {
-		return fmt.Errorf("create directory %s failed: %v", dstPath, err)
-	}
-
-	err = fo.CopyDirectory(srcPath, dstPath)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }

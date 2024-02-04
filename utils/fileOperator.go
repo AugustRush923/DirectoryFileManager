@@ -9,16 +9,16 @@ import (
 
 var File = fileOperatorInstance()
 
-type FileOperator struct {
+type fileOperator struct {
 }
 
-func fileOperatorInstance() *FileOperator {
-	single := FileOperator{}
+func fileOperatorInstance() *fileOperator {
+	single := fileOperator{}
 	return &single
 }
 
 // CreateFile :创建文件
-func (f *FileOperator) CreateFile(filename string, override bool) error {
+func (f *fileOperator) CreateFile(filename string, override bool) error {
 	var absPath = filename
 
 	if isAbs := filepath.IsAbs(absPath); !isAbs {
@@ -51,7 +51,7 @@ func (f *FileOperator) CreateFile(filename string, override bool) error {
 }
 
 // WriteFile echo
-func (f *FileOperator) WriteFile(filename, content string) error {
+func (f *fileOperator) WriteFile(filename, content string) error {
 	var absPath = filename
 	if isAbs := filepath.IsAbs(absPath); !isAbs {
 		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), filename)
@@ -76,7 +76,7 @@ func (f *FileOperator) WriteFile(filename, content string) error {
 }
 
 // ReadFile cat/more/less/tail/head
-func (f *FileOperator) ReadFile(filename string) (string, error) {
+func (f *fileOperator) ReadFile(filename string) (string, error) {
 	var absPath = filename
 	if isAbs := filepath.IsAbs(absPath); !isAbs {
 		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), filename)
@@ -102,7 +102,7 @@ func (f *FileOperator) ReadFile(filename string) (string, error) {
 }
 
 // DeleteFile rm
-func (f *FileOperator) DeleteFile(filename string) error {
+func (f *fileOperator) DeleteFile(filename string) error {
 	var absPath = filename
 	if isAbs := filepath.IsAbs(absPath); !isAbs {
 		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), filename)
@@ -126,7 +126,7 @@ func (f *FileOperator) DeleteFile(filename string) error {
 }
 
 // CopyFile cp
-func (f *FileOperator) CopyFile(oldFileName, newFileName string) error {
+func (f *fileOperator) CopyFile(oldFileName, newFileName string) error {
 	content, err := f.ReadFile(oldFileName)
 	if err != nil {
 		return err

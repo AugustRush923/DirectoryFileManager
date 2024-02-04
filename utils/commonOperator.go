@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type CommonOperator struct{}
+type commonOperator struct{}
 
 var Common = commonOperatorInstance()
 
@@ -15,29 +15,29 @@ func init() {
 	Common.SetWorkDirectory()
 }
 
-func commonOperatorInstance() *CommonOperator {
+func commonOperatorInstance() *commonOperator {
 	// 单例
-	single := &CommonOperator{}
+	single := &commonOperator{}
 	return single
 }
 
 // ShowWorkDirectory pwd
-func (co *CommonOperator) ShowWorkDirectory() string {
+func (co *commonOperator) ShowWorkDirectory() string {
 	return os.Getenv("workDirectory")
 }
 
-// SetWorkDirectory cd
-func (co *CommonOperator) SetWorkDirectory(paths ...string) bool {
-	// 设置/变更当前工作目录
+// SetWorkDirectory 设置/变更当前工作目录
+func (co *commonOperator) SetWorkDirectory(paths ...string) bool {
 	var path string
 	if len(paths) > 0 {
 		path = paths[0]
 	}
 
+	// 如果没有接收到变量则默认为当前所在目录
 	if path == "" {
 		currentPath, err := os.Getwd()
 		if err != nil {
-			fmt.Println("获取当前工作目录失败")
+			fmt.Println("get current work directory failed: err=", err)
 			return false
 		}
 		path = currentPath
@@ -45,31 +45,35 @@ func (co *CommonOperator) SetWorkDirectory(paths ...string) bool {
 
 	err := os.Chdir(path)
 	if err != nil {
-		fmt.Println("改变目录失败")
+		fmt.Println("change directory failed: err=", err)
 		return false
 	}
 
 	err = os.Setenv("workDirectory", path)
 	if err != nil {
-		fmt.Println("设置环境变量失败")
+		fmt.Println("set environment failed: err=", err)
 		return false
 	}
 	return true
 }
 
-func (co *CommonOperator) IsDir(path string) bool {
+// IsDir 判断给出路径是否为目录
+func (co *commonOperator) IsDir(path string) bool {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
+		fmt.Printf("get path: %s info failed: err=%v", path, err)
 		return false
 	}
 	return fileInfo.IsDir()
 }
 
-func (co *CommonOperator) IsFile(path string) bool {
+// IsFile 判断给出路径是否为文件
+func (co *commonOperator) IsFile(path string) bool {
 	return !co.IsDir(path)
 }
 
-func (co *CommonOperator) IsExist(path string) (bool, error) {
+// IsExist 判断给出路径是否存在
+func (co *commonOperator) IsExist(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -80,8 +84,8 @@ func (co *CommonOperator) IsExist(path string) (bool, error) {
 	return false, err
 }
 
-// RenameOrMove mv
-func (co *CommonOperator) RenameOrMove(oldFilename, newFilename string) error {
+// RenameOrMove 重命名/移动指定目录/文件
+func (co *commonOperator) RenameOrMove(oldFilename, newFilename string) error {
 	var oldAbsPath = oldFilename
 	if isAbs := filepath.IsAbs(oldAbsPath); !isAbs {
 		oldAbsPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), oldFilename)
@@ -96,7 +100,7 @@ func (co *CommonOperator) RenameOrMove(oldFilename, newFilename string) error {
 	return err
 }
 
-func (co *CommonOperator) CompletePath(path string) string {
+func (co *commonOperator) CompletePath(path string) string {
 	// 输入路径是绝对路径
 	if isAbs := filepath.IsAbs(path); isAbs {
 		// 路径是文件夹
@@ -110,5 +114,14 @@ func (co *CommonOperator) CompletePath(path string) string {
 	if isDir := co.IsDir(path); isDir && !strings.HasSuffix(path, string(os.PathSeparator)) {
 		return SplicingPath(path, string(os.PathSeparator))
 	}
+	return path
+}
+
+// CompleteFullPath 完善给到路径为绝对路径
+func (co *commonOperator) CompleteFullPath(path string) string {
+	if isAbs := filepath.IsAbs(path); !isAbs {
+		path = filepath.Join(os.Getenv("workDirectory"), path)
+	}
+	fmt.Println(path)
 	return path
 }
