@@ -4,7 +4,6 @@ import (
 	"base/consts"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 var File = fileOperatorInstance()
@@ -17,13 +16,9 @@ func fileOperatorInstance() *fileOperator {
 	return &single
 }
 
-// CreateFile :创建文件
+// CreateFile :在指定位置创建文件 类似于Linux中的touch命令
 func (f *fileOperator) CreateFile(filename string, override bool) error {
-	var absPath = filename
-
-	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), filename)
-	}
+	absPath := Common.CompleteFullPath(filename)
 
 	if !override {
 		exist, err := Common.IsExist(absPath)
@@ -50,12 +45,9 @@ func (f *fileOperator) CreateFile(filename string, override bool) error {
 	return nil
 }
 
-// WriteFile echo
+// WriteFile :往指定文件写入内容
 func (f *fileOperator) WriteFile(filename, content string) error {
-	var absPath = filename
-	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), filename)
-	}
+	var absPath = Common.CompleteFullPath(filename)
 
 	exist, err := Common.IsExist(absPath)
 	if err != nil {
@@ -75,12 +67,9 @@ func (f *fileOperator) WriteFile(filename, content string) error {
 	return err
 }
 
-// ReadFile cat/more/less/tail/head
+// ReadFile :读取指定位置的文件全部内容
 func (f *fileOperator) ReadFile(filename string) (string, error) {
-	var absPath = filename
-	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), filename)
-	}
+	var absPath = Common.CompleteFullPath(filename)
 
 	// 更简便的方式读取文件的所有内容
 	if isDir := Common.IsFile(absPath); !isDir {
@@ -101,12 +90,9 @@ func (f *fileOperator) ReadFile(filename string) (string, error) {
 	return string(fileContent), err
 }
 
-// DeleteFile rm
+// DeleteFile :删除指定位置的文件
 func (f *fileOperator) DeleteFile(filename string) error {
-	var absPath = filename
-	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), filename)
-	}
+	var absPath = Common.CompleteFullPath(filename)
 
 	exist, err := Common.IsExist(absPath)
 	if err != nil {
@@ -125,19 +111,21 @@ func (f *fileOperator) DeleteFile(filename string) error {
 	return err
 }
 
-// CopyFile cp
+// CopyFile :拷贝文件
 func (f *fileOperator) CopyFile(oldFileName, newFileName string) error {
-	content, err := f.ReadFile(oldFileName)
+	var oldAbsPath, newAbsPath = Common.CompleteFullPath(oldFileName), Common.CompleteFullPath(newFileName)
+
+	content, err := f.ReadFile(oldAbsPath)
 	if err != nil {
 		return err
 	}
 
-	err = f.CreateFile(newFileName, true)
+	err = f.CreateFile(newAbsPath, true)
 	if err != nil {
 		return err
 	}
 
-	err = f.WriteFile(newFileName, content)
+	err = f.WriteFile(newAbsPath, content)
 	if err != nil {
 		return err
 	}

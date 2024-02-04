@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type commonOperator struct{}
@@ -100,28 +99,11 @@ func (co *commonOperator) RenameOrMove(oldFilename, newFilename string) error {
 	return err
 }
 
-func (co *commonOperator) CompletePath(path string) string {
-	// 输入路径是绝对路径
-	if isAbs := filepath.IsAbs(path); isAbs {
-		// 路径是文件夹
-		if isDir := co.IsDir(path); isDir {
-			return SplicingPath(path, string(os.PathSeparator))
-		}
-		return path
-	}
-	// 输入路径是相对路径
-	path = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), path)
-	if isDir := co.IsDir(path); isDir && !strings.HasSuffix(path, string(os.PathSeparator)) {
-		return SplicingPath(path, string(os.PathSeparator))
-	}
-	return path
-}
-
 // CompleteFullPath 完善给到路径为绝对路径
 func (co *commonOperator) CompleteFullPath(path string) string {
 	if isAbs := filepath.IsAbs(path); !isAbs {
 		path = filepath.Join(os.Getenv("workDirectory"), path)
 	}
-	fmt.Println(path)
+
 	return path
 }
