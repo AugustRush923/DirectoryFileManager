@@ -2,6 +2,7 @@ package utils
 
 import (
 	"base/consts"
+	"base/models"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,16 +13,6 @@ import (
 var Folder = folderOperatorInstance()
 
 type folderOperator struct {
-}
-
-type DirectoryContent struct {
-	Name     string
-	IsDir    bool
-	Mode     string
-	ModeTime string
-	Size     int64
-	Path     string
-	Children []*DirectoryContent
 }
 
 func folderOperatorInstance() *folderOperator {
@@ -70,9 +61,9 @@ func circulateDirectory(path string, depth int) (string, error) {
 		depth++
 		if entry.IsDir() {
 			dir, _ := circulateDirectory(filepath.Join(path, entry.Name()), depth)
-			s = SplicingPath(s, strings.Repeat("----", depth-1), entry.Name(), "\n", dir)
+			s = SplicingString(s, strings.Repeat("----", depth-1), entry.Name(), "\n", dir)
 		} else {
-			s = SplicingPath(s, strings.Repeat("----", depth-1), entry.Name(), "\n")
+			s = SplicingString(s, strings.Repeat("----", depth-1), entry.Name(), "\n")
 		}
 		depth--
 	}
@@ -81,8 +72,8 @@ func circulateDirectory(path string, depth int) (string, error) {
 }
 
 // ListDirectoryContents :获取目标文件夹下的所有内容 类似于Linux中的ls命令
-func (fo *folderOperator) ListDirectoryContents(dirname string) ([]*DirectoryContent, error) {
-	contents := make([]*DirectoryContent, 0)
+func (fo *folderOperator) ListDirectoryContents(dirname string) ([]*models.DirectoryContent, error) {
+	contents := make([]*models.DirectoryContent, 0)
 
 	absPath := Common.CompleteFullPath(dirname)
 
@@ -104,21 +95,25 @@ func (fo *folderOperator) ListDirectoryContents(dirname string) ([]*DirectoryCon
 			if err != nil {
 				return nil, fmt.Errorf("entry can't read: %v", err)
 			}
-			contents = append(contents, &DirectoryContent{
-				Name:     contentInfo.Name(),
-				IsDir:    contentInfo.IsDir(),
-				Mode:     contentInfo.Mode().String(),
-				ModeTime: contentInfo.ModTime().Format("Jan 02 2006 15:04:05"),
-				Size:     contentInfo.Size(),
+			contents = append(contents, &models.DirectoryContent{
+				FileInfo: &models.FileInfo{
+					Name:     contentInfo.Name(),
+					IsDir:    contentInfo.IsDir(),
+					Mode:     contentInfo.Mode().String(),
+					ModeTime: contentInfo.ModTime().Format("Jan 02 2006 15:04:05"),
+					Size:     contentInfo.Size(),
+				},
 			})
 		}
 	} else {
-		contents = append(contents, &DirectoryContent{
-			Name:     dirname,
-			IsDir:    false,
-			Mode:     fileInfo.Mode().String(),
-			ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
-			Size:     fileInfo.Size(),
+		contents = append(contents, &models.DirectoryContent{
+			FileInfo: &models.FileInfo{
+				Name:     dirname,
+				IsDir:    false,
+				Mode:     fileInfo.Mode().String(),
+				ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
+				Size:     fileInfo.Size(),
+			},
 		})
 	}
 
@@ -134,7 +129,7 @@ func (fo *folderOperator) Ls(dirname string) (string, error) {
 
 	resultStr := consts.EmptyString
 	for _, content := range contents {
-		resultStr = SplicingPath(resultStr, content.Name, "\t")
+		resultStr = SplicingString(resultStr, content.Name, "\t")
 	}
 
 	return resultStr, nil
@@ -150,19 +145,19 @@ func (fo *folderOperator) Lsl(dirname string) (string, error) {
 
 	resultStr := consts.EmptyString
 	for _, content := range contents {
-		resultStr = SplicingPath(resultStr, content.Mode, "\t", strconv.FormatInt(content.Size, 10), "\t", content.ModeTime, "\t", content.Name, "\n")
+		resultStr = SplicingString(resultStr, content.Mode, "\t", strconv.FormatInt(content.Size, 10), "\t", content.ModeTime, "\t", content.Name, "\n")
 	}
 
 	return resultStr, nil
 }
 
 // GetAllFolderDepthContent :递归获取文件夹下的所有内容
-func (fo *folderOperator) GetAllFolderDepthContent(dirname string) ([]*DirectoryContent, error) {
+func (fo *folderOperator) GetAllFolderDepthContent(dirname string) ([]*models.DirectoryContent, error) {
 	absPath := dirname
 	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), dirname)
+		absPath = SplicingString(os.Getenv("workDirectory"), string(os.PathSeparator), dirname)
 	}
-	contents := make([]*DirectoryContent, 0)
+	contents := make([]*models.DirectoryContent, 0)
 
 	isDir := Common.IsDir(absPath)
 	if !isDir {
@@ -170,7 +165,7 @@ func (fo *folderOperator) GetAllFolderDepthContent(dirname string) ([]*Directory
 	}
 
 	if !strings.HasSuffix(absPath, string(os.PathSeparator)) {
-		absPath = SplicingPath(absPath, string(os.PathSeparator))
+		absPath = SplicingString(absPath, string(os.PathSeparator))
 	}
 
 	dirEntry, err := os.ReadDir(absPath)
@@ -185,24 +180,26 @@ func (fo *folderOperator) GetAllFolderDepthContent(dirname string) ([]*Directory
 		}
 
 		if entry.IsDir() {
-			directoryContents, _ := fo.GetAllFolderDepthContent(SplicingPath(absPath, entry.Name(), string(os.PathSeparator)))
-			contents = append(contents, &DirectoryContent{
-				Name:     entry.Name(),
-				IsDir:    true,
-				Mode:     fileInfo.Mode().String(),
-				ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
-				Size:     fileInfo.Size(),
-				Path:     absPath,
+			directoryContents, _ := fo.GetAllFolderDepthContent(SplicingString(absPath, entry.Name(), string(os.PathSeparator)))
+			contents = append(contents, &models.DirectoryContent{
+				FileInfo: &models.FileInfo{
+					Name:     entry.Name(),
+					IsDir:    true,
+					Mode:     fileInfo.Mode().String(),
+					ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
+					Size:     fileInfo.Size(),
+				},
 				Children: directoryContents,
 			})
 		} else {
-			contents = append(contents, &DirectoryContent{
-				Name:     entry.Name(),
-				IsDir:    false,
-				Mode:     fileInfo.Mode().String(),
-				ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
-				Size:     fileInfo.Size(),
-				Path:     absPath,
+			contents = append(contents, &models.DirectoryContent{
+				FileInfo: &models.FileInfo{
+					Name:     entry.Name(),
+					IsDir:    false,
+					Mode:     fileInfo.Mode().String(),
+					ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
+					Size:     fileInfo.Size(),
+				},
 				Children: nil,
 			})
 		}
@@ -213,17 +210,11 @@ func (fo *folderOperator) GetAllFolderDepthContent(dirname string) ([]*Directory
 
 // CopyDirectory :拷贝目录下的所有内容至新路径下 类似于Linux中的cp -r命令
 func (fo *folderOperator) CopyDirectory(srcDirname, dstDirname string) error {
-	srcPath := filepath.Clean(srcDirname)
-	if isAbs := filepath.IsAbs(srcPath); !isAbs {
-		srcPath = filepath.Join(os.Getenv("workDirectory"), srcPath)
-	}
+	srcPath := Common.CompleteFullPath(srcDirname)
 	srcPathList := strings.Split(srcPath, string(os.PathSeparator))
 	dirname := srcPathList[len(srcPathList)-1]
 
-	dstPath := filepath.Clean(dstDirname)
-	if isAbs := filepath.IsAbs(dstPath); !isAbs {
-		srcPath = filepath.Join(os.Getenv("workDirectory"), dstPath)
-	}
+	dstPath := Common.CompleteFullPath(dstDirname)
 	dstPath = filepath.Join(dstPath, dirname)
 
 	err := fo.CreateDirectory(dstPath)
@@ -282,5 +273,43 @@ func (fo *folderOperator) copyDirectory(src, dst string) error {
 			}
 		}
 	}
+	return nil
+}
+
+// RenameDirectory :重命名目录
+func (fo *folderOperator) RenameDirectory(oldName, newName string) error {
+	var oldAbsPath, newAbsPath = Common.CompleteFullPath(oldName), Common.CompleteFullPath(newName)
+	var oldPathList, newPathList = strings.Split(oldAbsPath, string(os.PathSeparator)), strings.Split(newAbsPath, string(os.PathSeparator))
+
+	if filepath.Join(oldPathList[:len(oldPathList)-1]...) !=
+		filepath.Join(newPathList[:len(newPathList)-1]...) {
+		return fmt.Errorf("%s and %s aren't at the same path", oldAbsPath, newAbsPath)
+	}
+
+	return Common.RenameOrMove(oldAbsPath, newAbsPath)
+}
+
+// MoveDirectory :移动目录至指定目录下
+func (fo *folderOperator) MoveDirectory(oldName, newName string) error {
+	var oldPath, newPath = Common.CompleteFullPath(oldName), Common.CompleteFullPath(newName)
+	var oldPathList, newPathList = strings.Split(oldPath, string(os.PathSeparator)), strings.Split(newPath, string(os.PathSeparator))
+
+	if filepath.Join(oldPathList[:len(oldPathList)-1]...) ==
+		filepath.Join(newPathList[:len(newPathList)-1]...) {
+		return fmt.Errorf("%s and %s are at the same path", oldPath, newPath)
+	}
+
+	// 拷贝至新目录下
+	err := fo.CopyDirectory(oldPath, newPath)
+	if err != nil {
+		return err
+	}
+
+	// 删除源目录
+	err = fo.DeleteDirectory(oldPath)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

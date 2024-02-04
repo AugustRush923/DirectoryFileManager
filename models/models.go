@@ -9,6 +9,6 @@ type FileInfo struct {
 }
 
 type DirectoryContent struct {
-	Info     *FileInfo
+	*FileInfo
 	Children []*DirectoryContent
 }
