@@ -153,10 +153,7 @@ func (fo *folderOperator) Lsl(dirname string) (string, error) {
 
 // GetAllFolderDepthContent :递归获取文件夹下的所有内容
 func (fo *folderOperator) GetAllFolderDepthContent(dirname string) ([]*models.DirectoryContent, error) {
-	absPath := dirname
-	if isAbs := filepath.IsAbs(absPath); !isAbs {
-		absPath = SplicingString(os.Getenv("workDirectory"), string(os.PathSeparator), dirname)
-	}
+	absPath := Common.CompleteFullPath(dirname)
 	contents := make([]*models.DirectoryContent, 0)
 
 	isDir := Common.IsDir(absPath)
