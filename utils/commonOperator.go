@@ -20,12 +20,12 @@ func commonOperatorInstance() *commonOperator {
 	return single
 }
 
-// ShowWorkDirectory pwd
+// ShowWorkDirectory :获取当前工作目录
 func (co *commonOperator) ShowWorkDirectory() string {
 	return os.Getenv("workDirectory")
 }
 
-// SetWorkDirectory 设置/变更当前工作目录
+// SetWorkDirectory :设置/变更当前工作目录
 func (co *commonOperator) SetWorkDirectory(paths ...string) bool {
 	var path string
 	if len(paths) > 0 {
@@ -66,12 +66,12 @@ func (co *commonOperator) IsDir(path string) bool {
 	return fileInfo.IsDir()
 }
 
-// IsFile 判断给出路径是否为文件
+// IsFile :判断给出路径是否为文件
 func (co *commonOperator) IsFile(path string) bool {
 	return !co.IsDir(path)
 }
 
-// IsExist 判断给出路径是否存在
+// IsExist :判断给出路径是否存在
 func (co *commonOperator) IsExist(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -83,7 +83,7 @@ func (co *commonOperator) IsExist(path string) (bool, error) {
 	return false, err
 }
 
-// RenameOrMove 重命名/移动指定目录/文件
+// RenameOrMove :重命名/移动指定目录/文件
 func (co *commonOperator) RenameOrMove(oldFilename, newFilename string) error {
 	var oldAbsPath = oldFilename
 	if isAbs := filepath.IsAbs(oldAbsPath); !isAbs {
@@ -99,7 +99,7 @@ func (co *commonOperator) RenameOrMove(oldFilename, newFilename string) error {
 	return err
 }
 
-// CompleteFullPath 完善给到路径为绝对路径
+// CompleteFullPath :完善给到路径为绝对路径
 func (co *commonOperator) CompleteFullPath(path string) string {
 	if isAbs := filepath.IsAbs(path); !isAbs {
 		path = filepath.Join(os.Getenv("workDirectory"), path)
