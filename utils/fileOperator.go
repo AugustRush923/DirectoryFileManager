@@ -2,6 +2,7 @@ package utils
 
 import (
 	"base/consts"
+	"base/models"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -159,4 +160,22 @@ func (f *fileOperator) MoveFile(oldFileName, newFileName string) error {
 	}
 
 	return Common.RenameOrMove(oldPath, newPath)
+}
+
+// GetFileInfo :获取指定文件详细信息
+func (f *fileOperator) GetFileInfo(filename string) (models.FileInfo, error) {
+	var absPath = Common.CompleteFullPath(filename)
+
+	fileInfo, err := os.Stat(absPath)
+	if err != nil {
+		return models.FileInfo{}, err
+	}
+
+	return models.FileInfo{
+		Name:     fileInfo.Name(),
+		IsDir:    fileInfo.IsDir(),
+		Mode:     fileInfo.Mode().String(),
+		ModeTime: fileInfo.ModTime().Format("Jan 02 2006 15:04:05"),
+		Size:     fileInfo.Size(),
+	}, nil
 }
