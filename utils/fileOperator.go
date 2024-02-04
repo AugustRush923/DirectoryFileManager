@@ -23,12 +23,12 @@ func (f *fileOperator) CreateFile(filename string, override bool) error {
 	if !override {
 		exist, err := Common.IsExist(absPath)
 		if err != nil {
-			fmt.Println("读取文件错误：", err)
+			fmt.Printf("get file %s failed：err=%v", absPath, err)
 			return err
 		}
 
 		if exist {
-			return fmt.Errorf("文件%s已存在", filename)
+			return fmt.Errorf("%s is already exist", absPath)
 		}
 	}
 
@@ -51,18 +51,18 @@ func (f *fileOperator) WriteFile(filename, content string) error {
 
 	exist, err := Common.IsExist(absPath)
 	if err != nil {
-		fmt.Println("读取文件错误：", err)
+		fmt.Printf("get file %s failed：err=%v", absPath, err)
 		return err
 	}
 	if !exist {
-		return fmt.Errorf("文件%s不存在", filename)
+		return fmt.Errorf("%s is not exist", absPath)
 	}
 
 	if isDir := Common.IsFile(absPath); !isDir {
 		return fmt.Errorf("%s is not a file", absPath)
 	}
 
-	err = os.WriteFile(absPath, []byte(content), 0666)
+	err = os.WriteFile(absPath, []byte(content), os.ModePerm)
 
 	return err
 }
@@ -78,11 +78,11 @@ func (f *fileOperator) ReadFile(filename string) (string, error) {
 
 	exist, err := Common.IsExist(absPath)
 	if err != nil {
-		fmt.Println("读取文件错误：", err)
+		fmt.Printf("get file %s failed：err=%v", absPath, err)
 		return consts.EmptyString, err
 	}
 	if !exist {
-		return consts.EmptyString, fmt.Errorf("文件%s不存在", filename)
+		return consts.EmptyString, fmt.Errorf("%s is not exist", filename)
 	}
 
 	fileContent, err := os.ReadFile(absPath)
@@ -96,11 +96,11 @@ func (f *fileOperator) DeleteFile(filename string) error {
 
 	exist, err := Common.IsExist(absPath)
 	if err != nil {
-		fmt.Println("读取文件错误：", err)
+		fmt.Printf("get file %s failed：err=%v", absPath, err)
 		return err
 	}
 	if !exist {
-		return fmt.Errorf("文件%s不存在", filename)
+		return fmt.Errorf("%s is not exist", filename)
 	}
 
 	if isDir := Common.IsFile(absPath); !isDir {
@@ -120,7 +120,7 @@ func (f *fileOperator) CopyFile(oldFileName, newFileName string) error {
 		return err
 	}
 
-	err = f.CreateFile(newAbsPath, true)
+	err = f.CreateFile(newAbsPath, false)
 	if err != nil {
 		return err
 	}
