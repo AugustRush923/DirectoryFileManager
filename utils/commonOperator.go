@@ -85,16 +85,7 @@ func (co *commonOperator) IsExist(path string) (bool, error) {
 
 // RenameOrMove :重命名/移动指定目录/文件
 func (co *commonOperator) RenameOrMove(oldFilename, newFilename string) error {
-	var oldAbsPath = oldFilename
-	if isAbs := filepath.IsAbs(oldAbsPath); !isAbs {
-		oldAbsPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), oldFilename)
-	}
-	var newAbsPath = newFilename
-	if isAbs := filepath.IsAbs(newAbsPath); !isAbs {
-		newAbsPath = SplicingPath(os.Getenv("workDirectory"), string(os.PathSeparator), newFilename)
-	}
-
-	err := os.Rename(oldAbsPath, newAbsPath)
+	err := os.Rename(oldFilename, newFilename)
 
 	return err
 }

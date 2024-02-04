@@ -4,6 +4,8 @@ import (
 	"base/consts"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 var File = fileOperatorInstance()
@@ -131,4 +133,30 @@ func (f *fileOperator) CopyFile(oldFileName, newFileName string) error {
 	}
 
 	return nil
+}
+
+// RenameFile :重命名文件
+func (f *fileOperator) RenameFile(oldFileName, newFileName string) error {
+	var oldPath, newPath = Common.CompleteFullPath(oldFileName), Common.CompleteFullPath(newFileName)
+	var oldPathList, newPathList = strings.Split(oldPath, string(os.PathSeparator)), strings.Split(newPath, string(os.PathSeparator))
+
+	if filepath.Join(oldPathList[:len(oldPathList)-1]...) !=
+		filepath.Join(newPathList[:len(newPathList)-1]...) {
+		return fmt.Errorf("%s and %s are not at the same path", oldPath, newPath)
+	}
+
+	return Common.RenameOrMove(oldPath, newPath)
+}
+
+// MoveFile :移动文件到指定位置
+func (f *fileOperator) MoveFile(oldFileName, newFileName string) error {
+	var oldPath, newPath = Common.CompleteFullPath(oldFileName), Common.CompleteFullPath(newFileName)
+	var oldPathList, newPathList = strings.Split(oldPath, string(os.PathSeparator)), strings.Split(newPath, string(os.PathSeparator))
+
+	if filepath.Join(oldPathList[:len(oldPathList)-1]...) ==
+		filepath.Join(newPathList[:len(newPathList)-1]...) {
+		return fmt.Errorf("%s and %s are at the same path", oldPath, newPath)
+	}
+
+	return Common.RenameOrMove(oldPath, newPath)
 }
